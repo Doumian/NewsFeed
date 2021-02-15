@@ -19,6 +19,7 @@ import javax.xml.parsers.SAXParserFactory;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -68,7 +69,16 @@ public class ScheduledFeedCall {
 	void storeInDb(FeedHandler feedHandler){
 		RSSFeedEntity rssFeedEntity = feedHandler.getRssFeedEntity();
 		List<FeedItemEntity> feed = rssFeedEntity.getFeed();
-		feed.forEach(feedItemEntity -> feedRepository.save(feedItemEntity));
+		feed.forEach(feedItemEntity -> {
+			Optional<FeedItemEntity> feedItem = feedRepository.findById(feedItemEntity.getId());
+			if(feedItem.isPresent() && !feedItem.get().equals(feedItemEntity)) {
+				feedItem.get().setDescription(feedItemEntity.getDescription());
+				feedItem.get().setTitle(feedItemEntity.getTitle());
+				feedItem.get().setPublicationDate(feedItemEntity.getPublicationDate());
+				feedItem.get().setImage(feedItemEntity.getImage());
+			}
+				feedRepository.save(feedItemEntity);
+		});
 
 	}
 }

@@ -8,6 +8,6 @@ import org.springframework.stereotype.Repository;
  * The interface Feed repository.
  */
 @Repository
-public interface FeedRepository extends JpaRepository<FeedItemEntity, Long> {
+public interface FeedRepository extends JpaRepository<FeedItemEntity, Integer> {
 
 }

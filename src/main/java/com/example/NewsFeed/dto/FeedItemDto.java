@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Data
 public class FeedItemDto {
 
-    private Long id;
+    private Integer id;
 
     private String title;
 

@@ -3,6 +3,7 @@ package com.example.NewsFeed.handler;
 import com.example.NewsFeed.model.FeedItemEntity;
 import com.example.NewsFeed.model.RSSFeedEntity;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -16,6 +17,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -31,8 +34,12 @@ public class FeedHandler extends DefaultHandler {
     private static final String DESCRIPTION = "description";
     private static final String PUB_DATE = "pubDate";
     private static final String IMAGE = "enclosure";
+    private static final String GUID = "guid";
     private static final String URL = "url";
+
     private static final String DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ssZ";
+
+    private static final String PATTERN = "\\d+(?!.*\\d)";
 
     private RSSFeedEntity rssFeedEntity;
     private String imageUrl;
@@ -114,6 +121,9 @@ public class FeedHandler extends DefaultHandler {
                 case IMAGE:
                     latestArticle().setImage(urlToByteArray(imageUrl));
                     break;
+                case GUID:
+                    latestArticle().setId(extractIdFromUrl(chars.toString()));
+                    break;
             }
         }
     }
@@ -151,6 +161,22 @@ public class FeedHandler extends DefaultHandler {
         URL url = new URL(imageUrl);
         BufferedInputStream bis = new BufferedInputStream(url.openConnection().getInputStream());
         return bis.readAllBytes();
+    }
+
+    /**
+     *
+     * We extract with a regex the unique ID from the GUID tag
+     *
+     * @param url
+     * @return Return the unique ID for the item
+     */
+
+    private Integer extractIdFromUrl(String url){
+        Pattern pattern = Pattern.compile(PATTERN);
+        Matcher matcher = pattern.matcher(url);
+        matcher.find();
+        if(NumberUtils.isCreatable(matcher.group(0))) return Integer.valueOf(matcher.group(0));
+        throw new IllegalArgumentException("Invalid XML Parsed Id");
     }
 
 }
