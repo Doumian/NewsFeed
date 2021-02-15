@@ -7,6 +7,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 
 
+/**
+ * The type Security configuration.
+ */
 @Configuration
 @EnableWebSecurity
 @EnableScheduling

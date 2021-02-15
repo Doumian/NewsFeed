@@ -4,6 +4,11 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+
+/**
+ * The type Feed item dto.
+ * @author dlarena
+ */
 @Data
 public class FeedItemDto {
 

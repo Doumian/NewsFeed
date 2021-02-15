@@ -5,6 +5,9 @@ import lombok.Data;
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
+/**
+ * The type Feed item entity.
+ */
 @Entity
 @Data
 @Table(name="FeedItem")

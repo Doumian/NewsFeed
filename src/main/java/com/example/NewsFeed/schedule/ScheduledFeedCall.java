@@ -21,8 +21,12 @@ import java.net.URL;
 import java.util.List;
 
 
+/**
+ * The Schedule class that runs the Scheduled method to retrieve the RSS Feed every 5 min
+ * @author dlarena
+ */
 @Component
-public class ScheduledTasks {
+public class ScheduledFeedCall {
 
 	@Autowired
 	private FeedRepository feedRepository;
@@ -32,8 +36,15 @@ public class ScheduledTasks {
 	private static final String RSS_FEED_URL = "http://feeds.nos.nl/nosjournaal?format=xml.";
 	private static final String CRON = "*/5 * * * * *";
 
+	/**
+	 * Method that retrieves the news feed, and reads them using a custom handler
+	 *
+	 * @throws ParserConfigurationException the parser configuration exception
+	 * @throws SAXException                 the sax exception
+	 * @throws IOException                  the io exception
+	 */
 	@Scheduled(cron=CRON)
-	public void reportCurrentTime() throws ParserConfigurationException, SAXException, IOException {
+	public void retrieveNewsFeed() throws ParserConfigurationException, SAXException, IOException {
 		SAXParserFactory parserFactory = SAXParserFactory.newInstance();
 		SAXParser parser = parserFactory.newSAXParser();
 		XMLReader reader = parser.getXMLReader();
@@ -48,6 +59,11 @@ public class ScheduledTasks {
 
 	}
 
+	/**
+	 * Method that stores in DB the articles that have been retrieved previously
+	 *
+	 * @param feedHandler the feed handler
+	 */
 	@Transactional
 	void storeInDb(FeedHandler feedHandler){
 		RSSFeedEntity rssFeedEntity = feedHandler.getRssFeedEntity();
