@@ -70,12 +70,12 @@ public class ScheduledFeedCall {
 		RSSFeedEntity rssFeedEntity = feedHandler.getRssFeedEntity();
 		List<FeedItemEntity> feed = rssFeedEntity.getFeed();
 		feed.forEach(feedItemEntity -> {
-			Optional<FeedItemEntity> feedItem = feedRepository.findById(feedItemEntity.getId());
-			if(feedItem.isPresent() && !feedItem.get().equals(feedItemEntity)) {
-				feedItem.get().setDescription(feedItemEntity.getDescription());
-				feedItem.get().setTitle(feedItemEntity.getTitle());
-				feedItem.get().setPublicationDate(feedItemEntity.getPublicationDate());
-				feedItem.get().setImage(feedItemEntity.getImage());
+			Optional<FeedItemEntity> existingFeedItem = feedRepository.findById(feedItemEntity.getId());
+			if(existingFeedItem.isPresent() && !existingFeedItem.get().equals(feedItemEntity)) {
+				existingFeedItem.get().setDescription(feedItemEntity.getDescription());
+				existingFeedItem.get().setTitle(feedItemEntity.getTitle());
+				existingFeedItem.get().setPublicationDate(feedItemEntity.getPublicationDate());
+				existingFeedItem.get().setImage(feedItemEntity.getImage());
 			}
 				feedRepository.save(feedItemEntity);
 		});
