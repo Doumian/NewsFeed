@@ -1,12 +1,9 @@
 package com.example.NewsFeed.handler;
 
-import com.example.NewsFeed.model.RSSFeedEntity;
 import com.example.NewsFeed.model.FeedItemEntity;
-import com.example.NewsFeed.repository.NewRepository;
+import com.example.NewsFeed.model.RSSFeedEntity;
 import lombok.SneakyThrows;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.xml.sax.Attributes;
-import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 import java.io.BufferedInputStream;
@@ -22,9 +19,6 @@ import java.util.Locale;
 
 public class FeedHandler extends DefaultHandler {
 
-    @Autowired
-    private NewRepository newRepository;
-
     private StringBuilder chars = new StringBuilder();
 
     private static final String ITEM = "item";
@@ -33,44 +27,40 @@ public class FeedHandler extends DefaultHandler {
     private static final String PUB_DATE = "pubDate";
     private static final String IMAGE = "enclosure";
     private static final String URL = "url";
+    private static final String DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ssZ";
 
     private RSSFeedEntity rssFeedEntity;
-    private String elementValue;
     private String imageUrl;
     private Boolean limitReached = false;
 
     @Override
-    public void characters(char[] ch, int start, int length) throws SAXException {
+    public void characters(char[] ch, int start, int length) {
         chars.append(ch, start, length);
     }
 
     @Override
-    public void startDocument() throws SAXException {
+    public void startDocument() {
         rssFeedEntity = new RSSFeedEntity();
     }
 
     @Override
-    public void startElement(String uri, String lName, String qName, Attributes attr) throws SAXException {
-
+    public void startElement(String uri, String lName, String qName, Attributes attr) {
             chars.setLength(0);
-            switch (qName) {
-                case ITEM:
-                    if(Boolean.FALSE.equals(limitReached)) {
-                        if (rssFeedEntity.getFeed() == null) rssFeedEntity.setFeed(new ArrayList<>());
-                        rssFeedEntity.getFeed().add(new FeedItemEntity());
-                        if (rssFeedEntity.getFeed().size() == 10) limitReached = true;
-                    }
-                    break;
-                case IMAGE:
-                    imageUrl = attr.getValue(URL);
-                    break;
+            if(qName.equals(ITEM)){
+                if(Boolean.FALSE.equals(limitReached)) {
+                    if (rssFeedEntity.getFeed() == null) rssFeedEntity.setFeed(new ArrayList<>());
+                    rssFeedEntity.getFeed().add(new FeedItemEntity());
+                    if (rssFeedEntity.getFeed().size() == 10) limitReached = true;
+                }
+            } else if(qName.equals(IMAGE)){
+                imageUrl = attr.getValue(URL);
             }
 
     }
 
     @SneakyThrows
     @Override
-    public void endElement(String uri, String localName, String qName) throws SAXException {
+    public void endElement(String uri, String localName, String qName) {
         if(rssFeedEntity.getFeed() != null) {
             switch (qName) {
                 case TITLE:
@@ -80,14 +70,13 @@ public class FeedHandler extends DefaultHandler {
                     latestArticle().setDescription(chars.toString());
                     break;
                 case PUB_DATE:
-                    SimpleDateFormat curFormater = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ssZ", Locale.ENGLISH);
-                    Date publicationDate = curFormater.parse(chars.toString());
+                    SimpleDateFormat curFormatter = new SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH);
+                    Date publicationDate = curFormatter.parse(chars.toString());
                     LocalDateTime ldtPublicationDate = LocalDateTime.ofInstant(publicationDate.toInstant(),
                             ZoneId.systemDefault());
                     latestArticle().setPublicationDate(ldtPublicationDate);
                     break;
                 case IMAGE:
-                    // Por qué llega aquí la url a null
                     latestArticle().setImage(urlToByteArray(imageUrl));
                     break;
             }

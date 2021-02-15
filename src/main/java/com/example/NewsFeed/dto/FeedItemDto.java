@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class NewDto {
+public class FeedItemDto {
 
     private Long id;
 

@@ -3,12 +3,8 @@ package com.example.NewsFeed.schedule;
 import com.example.NewsFeed.handler.FeedHandler;
 import com.example.NewsFeed.model.FeedItemEntity;
 import com.example.NewsFeed.model.RSSFeedEntity;
-import com.example.NewsFeed.repository.NewRepository;
-import lombok.Lombok;
-import lombok.extern.slf4j.Slf4j;
+import com.example.NewsFeed.repository.FeedRepository;
 import org.modelmapper.ModelMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -29,19 +25,25 @@ import java.util.List;
 public class ScheduledTasks {
 
 	@Autowired
-	private NewRepository newRepository;
+	private FeedRepository feedRepository;
+
 	private ModelMapper modelMapper = new ModelMapper();
 
-	private static final String URL = "http://feeds.nos.nl/nosjournaal?format=xml.";
+	private static final String RSS_FEED_URL = "http://feeds.nos.nl/nosjournaal?format=xml.";
+	private static final String CRON = "*/5 * * * * *";
 
-	@Scheduled(fixedRate = 50000)
+	@Scheduled(cron=CRON)
 	public void reportCurrentTime() throws ParserConfigurationException, SAXException, IOException {
 		SAXParserFactory parserFactory = SAXParserFactory.newInstance();
 		SAXParser parser = parserFactory.newSAXParser();
 		XMLReader reader = parser.getXMLReader();
 		FeedHandler feedHandler = new FeedHandler();
+		URL url = new URL(RSS_FEED_URL);
+		InputSource inputSource = new InputSource(url.openStream());
+
 		reader.setContentHandler(feedHandler);
-		reader.parse(new InputSource(new URL(URL).openStream()));
+		reader.parse(inputSource);
+
 		storeInDb(feedHandler);
 
 	}
@@ -50,8 +52,7 @@ public class ScheduledTasks {
 	void storeInDb(FeedHandler feedHandler){
 		RSSFeedEntity rssFeedEntity = feedHandler.getRssFeedEntity();
 		List<FeedItemEntity> feed = rssFeedEntity.getFeed();
-		feed.forEach(feedItemEntity -> {
-			newRepository.save(feedItemEntity);
-		});
+		feed.forEach(feedItemEntity -> feedRepository.save(feedItemEntity));
+
 	}
 }
