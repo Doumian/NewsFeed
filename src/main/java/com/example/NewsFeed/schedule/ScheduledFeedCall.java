@@ -2,7 +2,6 @@ package com.example.NewsFeed.schedule;
 
 import com.example.NewsFeed.handler.FeedHandler;
 import com.example.NewsFeed.model.FeedItemEntity;
-import com.example.NewsFeed.model.RSSFeedEntity;
 import com.example.NewsFeed.repository.FeedRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +17,7 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,7 +27,7 @@ import java.util.Optional;
  * @author dlarena
  */
 @Component
-public class ScheduledFeedCall {
+public class ScheduledFeedCall implements CustomParser{
 
 	@Autowired
 	private FeedRepository feedRepository;
@@ -45,30 +45,20 @@ public class ScheduledFeedCall {
 	 * @throws IOException                  the io exception
 	 */
 	@Scheduled(cron=CRON)
-	public void retrieveNewsFeed() throws ParserConfigurationException, SAXException, IOException {
-		SAXParserFactory parserFactory = SAXParserFactory.newInstance();
-		SAXParser parser = parserFactory.newSAXParser();
-		XMLReader reader = parser.getXMLReader();
-		FeedHandler feedHandler = new FeedHandler();
-		URL url = new URL(RSS_FEED_URL);
-		InputSource inputSource = new InputSource(url.openStream());
+	public void retrieveNewsFeed() throws IOException, SAXException, ParserConfigurationException {
 
-		reader.setContentHandler(feedHandler);
-		reader.parse(inputSource);
+		List<FeedItemEntity> feedItemEntities = parseXMLFromURL(RSS_FEED_URL);
 
-		storeInDb(feedHandler);
-
+		storeInDb(feedItemEntities);
 	}
 
 	/**
 	 * Method that stores in DB the articles that have been retrieved previously
 	 *
-	 * @param feedHandler the feed handler
+	 * @param feed List of items to store in DB
 	 */
 	@Transactional
-	void storeInDb(FeedHandler feedHandler){
-		RSSFeedEntity rssFeedEntity = feedHandler.getRssFeedEntity();
-		List<FeedItemEntity> feed = rssFeedEntity.getFeed();
+	void storeInDb(List<FeedItemEntity> feed){
 		feed.forEach(feedItemEntity -> {
 			Optional<FeedItemEntity> existingFeedItem = feedRepository.findById(feedItemEntity.getId());
 			if(existingFeedItem.isPresent() && !existingFeedItem.get().equals(feedItemEntity)) {
@@ -80,5 +70,25 @@ public class ScheduledFeedCall {
 				feedRepository.save(feedItemEntity);
 		});
 
+	}
+
+	@Override
+	public List<FeedItemEntity> parseXMLFromURL(String url) throws ParserConfigurationException, SAXException, IOException {
+		List<FeedItemEntity> feedItemEntities = new ArrayList<>();
+
+		FeedHandler feedHandler = new FeedHandler();
+		SAXParserFactory parserFactory = SAXParserFactory.newInstance();
+		SAXParser parser = parserFactory.newSAXParser();
+		XMLReader reader = parser.getXMLReader();
+		URL newsUrl = new URL(url);
+		InputSource inputSource = new InputSource(newsUrl.openStream());
+		reader.setContentHandler(feedHandler);
+		reader.parse(inputSource);
+
+		if(feedHandler.getRssFeedEntity() != null && feedHandler.getRssFeedEntity().getFeed() != null) {
+			feedItemEntities = feedHandler.getRssFeedEntity().getFeed();
+		}
+
+		return feedItemEntities;
 	}
 }
