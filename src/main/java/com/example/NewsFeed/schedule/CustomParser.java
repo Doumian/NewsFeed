@@ -1,6 +1,6 @@
 package com.example.NewsFeed.schedule;
 
-import com.example.NewsFeed.model.FeedItemEntity;
+import com.example.NewsFeed.model.NewEntity;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -9,6 +9,8 @@ import java.util.List;
 
 public interface CustomParser {
 
-    public List<FeedItemEntity> parseXMLFromURL(String url) throws ParserConfigurationException, SAXException, IOException;
+    List<NewEntity> parse(String url) throws ParserConfigurationException, SAXException, IOException;
+
+    Integer storeInDb(List<NewEntity> feedItemEntities);
 
 }

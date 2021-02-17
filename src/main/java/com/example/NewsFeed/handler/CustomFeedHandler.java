@@ -1,7 +1,7 @@
 package com.example.NewsFeed.handler;
 
-import com.example.NewsFeed.model.FeedItemEntity;
-import com.example.NewsFeed.model.RSSFeedEntity;
+import com.example.NewsFeed.model.NewEntity;
+import com.example.NewsFeed.model.FeedEntity;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.xml.sax.Attributes;
@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
  * Custom Handler for parsing the XML data
  * @author dlarena
  */
-public class FeedHandler extends DefaultHandler {
+public class CustomFeedHandler extends DefaultHandler {
 
     private StringBuilder chars = new StringBuilder();
 
@@ -41,7 +41,7 @@ public class FeedHandler extends DefaultHandler {
 
     private static final String PATTERN = "\\d+(?!.*\\d)";
 
-    private RSSFeedEntity rssFeedEntity;
+    private FeedEntity feedEntity;
     private String imageUrl;
     private Boolean limitReached = false;
 
@@ -64,7 +64,7 @@ public class FeedHandler extends DefaultHandler {
 
     @Override
     public void startDocument() {
-        rssFeedEntity = new RSSFeedEntity();
+        feedEntity = new FeedEntity();
     }
 
     /**
@@ -82,9 +82,9 @@ public class FeedHandler extends DefaultHandler {
             chars.setLength(0);
             if(qName.equals(ITEM)){
                 if(Boolean.FALSE.equals(limitReached)) {
-                    if (rssFeedEntity.getFeed() == null) rssFeedEntity.setFeed(new ArrayList<>());
-                    rssFeedEntity.getFeed().add(new FeedItemEntity());
-                    if (rssFeedEntity.getFeed().size() == 10) limitReached = true;
+                    if (feedEntity.getFeed() == null) feedEntity.setFeed(new ArrayList<>());
+                    feedEntity.getFeed().add(new NewEntity());
+                    if (feedEntity.getFeed().size() == 10) limitReached = true;
                 }
             } else if(qName.equals(IMAGE)){
                 imageUrl = attr.getValue(URL);
@@ -103,7 +103,7 @@ public class FeedHandler extends DefaultHandler {
     @SneakyThrows
     @Override
     public void endElement(String uri, String localName, String qName) {
-        if(rssFeedEntity.getFeed() != null) {
+        if(feedEntity.getFeed() != null) {
             switch (qName) {
                 case TITLE:
                     latestArticle().setTitle(chars.toString());
@@ -134,8 +134,8 @@ public class FeedHandler extends DefaultHandler {
      * @return last article
      */
 
-    private FeedItemEntity latestArticle() {
-        List<FeedItemEntity> articleList = rssFeedEntity.getFeed();
+    private NewEntity latestArticle() {
+        List<NewEntity> articleList = feedEntity.getFeed();
         int latestArticleIndex = articleList.size() - 1;
         return articleList.get(latestArticleIndex);
     }
@@ -145,8 +145,8 @@ public class FeedHandler extends DefaultHandler {
      *
      * @return the rss feed entity
      */
-    public RSSFeedEntity getRssFeedEntity() {
-        return rssFeedEntity;
+    public FeedEntity getRssFeedEntity() {
+        return feedEntity;
     }
 
 

@@ -1,33 +1,25 @@
-package com.example.NewsFeed.model;
+package com.example.NewsFeed.dto;
 
 import lombok.Data;
 
-import javax.persistence.*;
 import java.time.LocalDateTime;
 
-/**
- * The type Feed item entity.
- */
-@Entity
-@Data
-@Table(name="FeedItem")
-public class FeedItemEntity {
 
-    @Id
+/**
+ * The type Feed item dto.
+ * @author dlarena
+ */
+@Data
+public class NewDto {
+
     private Integer id;
 
     private String title;
-    
-    @Column(columnDefinition = "LONGTEXT")
+
     private String description;
 
     private LocalDateTime publicationDate;
 
-    @Lob
     private byte[] image;
 
 }
-
-
-
-

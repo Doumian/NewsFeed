@@ -1,18 +1,18 @@
 package com.example.NewsFeed.service;
 
-import com.example.NewsFeed.dto.FeedItemDto;
+import com.example.NewsFeed.dto.NewDto;
 import java.util.List;
 
 /**
  * The interface Feed service.
  */
-public interface FeedService {
+public interface NewService {
 
     /**
      * Gets all.
      *
      * @return the all
      */
-    List<FeedItemDto> getAll();
+    List<NewDto> getAll();
 
 }
