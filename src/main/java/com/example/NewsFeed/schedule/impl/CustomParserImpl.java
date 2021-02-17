@@ -58,16 +58,15 @@ public class CustomParserImpl implements CustomParser {
     @Override
     @Transactional
     public Integer storeInDb(List<NewEntity> newList) {
-        List<NewEntity> validatedList = validateList(newList);
+        List<NewEntity> validatedList = checkDuplicatesInList(newList);
         return newRepository.saveAll(validatedList).size();
     }
 
-    private List<NewEntity> validateList(List<NewEntity> newList) {
+    private List<NewEntity> checkDuplicatesInList(List<NewEntity> newList) {
         newList.forEach(newEntity -> {
             Optional<NewEntity> existingNew = newRepository.findById(newEntity.getId());
-            if(existingNew.get().equals(newEntity)) newList.remove(newEntity);
+            if(existingNew.isPresent() && existingNew.get().equals(newEntity)) newList.remove(newEntity);
         });
-
         return newList;
     }
 }
