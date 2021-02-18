@@ -1,7 +1,7 @@
 package com.example.NewsFeed.handler;
 
-import com.example.NewsFeed.model.NewEntity;
-import com.example.NewsFeed.model.FeedEntity;
+import com.example.NewsFeed.dto.NewDto;
+import com.example.NewsFeed.exception.CustomParsingException;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.xml.sax.Attributes;
@@ -10,6 +10,7 @@ import org.xml.sax.helpers.DefaultHandler;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 
 /**
@@ -41,7 +43,7 @@ public class CustomFeedHandler extends DefaultHandler {
 
     private static final String PATTERN = "\\d+(?!.*\\d)";
 
-    private FeedEntity feedEntity;
+    private List<NewDto> feed;
     private String imageUrl;
     private Boolean limitReached = false;
 
@@ -64,7 +66,7 @@ public class CustomFeedHandler extends DefaultHandler {
 
     @Override
     public void startDocument() {
-        feedEntity = new FeedEntity();
+        feed = new ArrayList<>();
     }
 
     /**
@@ -82,9 +84,9 @@ public class CustomFeedHandler extends DefaultHandler {
             chars.setLength(0);
             if(qName.equals(ITEM)){
                 if(Boolean.FALSE.equals(limitReached)) {
-                    if (feedEntity.getFeed() == null) feedEntity.setFeed(new ArrayList<>());
-                    feedEntity.getFeed().add(new NewEntity());
-                    if (feedEntity.getFeed().size() == 10) limitReached = true;
+                    //if (feed == null) startDocument();
+                    feed.add(new NewDto());
+                    if (feed.size() == 10) limitReached = true;
                 }
             } else if(qName.equals(IMAGE)){
                 imageUrl = attr.getValue(URL);
@@ -103,7 +105,7 @@ public class CustomFeedHandler extends DefaultHandler {
     @SneakyThrows
     @Override
     public void endElement(String uri, String localName, String qName) {
-        if(feedEntity.getFeed() != null) {
+        if(feed.size() > 0) {
             switch (qName) {
                 case TITLE:
                     latestArticle().setTitle(chars.toString());
@@ -112,71 +114,60 @@ public class CustomFeedHandler extends DefaultHandler {
                     latestArticle().setDescription(chars.toString());
                     break;
                 case PUB_DATE:
-                    SimpleDateFormat curFormatter = new SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH);
-                    Date publicationDate = curFormatter.parse(chars.toString());
-                    LocalDateTime ldtPublicationDate = LocalDateTime.ofInstant(publicationDate.toInstant(),
-                            ZoneId.systemDefault());
-                    latestArticle().setPublicationDate(ldtPublicationDate);
+                    latestArticle().setPublicationDate(getLocalDateTime());
                     break;
                 case IMAGE:
                     latestArticle().setImage(urlToByteArray(imageUrl));
                     break;
                 case GUID:
-                    latestArticle().setId(extractIdFromUrl(chars.toString()));
+                    latestArticle().setId(extractIdFromUrl());
                     break;
             }
         }
     }
 
-    /**
-     * Return the last article from the list
-     *
-     * @return last article
-     */
 
-    private NewEntity latestArticle() {
-        List<NewEntity> articleList = feedEntity.getFeed();
+    private LocalDateTime getLocalDateTime() throws CustomParsingException {
+        try {
+            SimpleDateFormat curFormatter = new SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH);
+            Date publicationDate = curFormatter.parse(chars.toString());
+            LocalDateTime ldtPublicationDate = LocalDateTime.ofInstant(publicationDate.toInstant(),
+                    ZoneId.systemDefault());
+            return ldtPublicationDate;
+        } catch(ParseException ex){
+            throw new CustomParsingException("Something went wrong while parsing the Publication Date, it may be malformed or non parseable: " + ex);
+        }
+    }
+
+    private NewDto latestArticle() {
+        List<NewDto> articleList = feed;
         int latestArticleIndex = articleList.size() - 1;
         return articleList.get(latestArticleIndex);
     }
 
-    /**
-     * Gets rss feed entity.
-     *
-     * @return the rss feed entity
-     */
-    public FeedEntity getRssFeedEntity() {
-        return feedEntity;
+    public List<NewDto> getRssFeedEntity() {
+        return feed;
     }
 
 
-    /**
-     * Transforms an image, from its URL, to an array of bytes, so we can store it in DB
-     *
-     * @return The array of bytes of the image
-     * @param imageUrl The string for the image URL
-     */
-
-    private byte[] urlToByteArray(String imageUrl) throws IOException {
-        URL url = new URL(imageUrl);
-        BufferedInputStream bis = new BufferedInputStream(url.openConnection().getInputStream());
-        return bis.readAllBytes();
+    private byte[] urlToByteArray(String imageUrl) throws CustomParsingException {
+        try {
+            URL url = new URL(imageUrl);
+            BufferedInputStream bis = new BufferedInputStream(url.openConnection().getInputStream());
+            return bis.readAllBytes();
+        } catch (IOException ex){
+            throw new CustomParsingException("Something went wrong while parsing the Image URL, it may be malformed or non parseable: " + ex);
+        }
     }
 
-    /**
-     *
-     * We extract with a regex the unique ID from the GUID tag
-     *
-     * @param url
-     * @return Return the unique ID for the item
-     */
 
-    private Integer extractIdFromUrl(String url){
+    private Integer extractIdFromUrl() throws CustomParsingException {
+
         Pattern pattern = Pattern.compile(PATTERN);
-        Matcher matcher = pattern.matcher(url);
+        Matcher matcher = pattern.matcher(chars.toString());
         matcher.find();
-        if(NumberUtils.isCreatable(matcher.group(0))) return Integer.valueOf(matcher.group(0));
-        throw new IllegalArgumentException("Invalid XML Parsed Id");
+        if (NumberUtils.isCreatable(matcher.group(0))) return Integer.valueOf(matcher.group(0));
+        else throw new CustomParsingException("Something went wrong while extracting the ID, non matching results" + matcher.group(0));
     }
 
 }

@@ -1,5 +1,9 @@
 package com.example.NewsFeed.schedule.impl;
 
+import com.example.NewsFeed.dto.NewDto;
+import com.example.NewsFeed.exception.InputSourceException;
+import com.example.NewsFeed.exception.CustomParsingException;
+import com.example.NewsFeed.exception.XMLReaderException;
 import com.example.NewsFeed.handler.CustomFeedHandler;
 import com.example.NewsFeed.model.NewEntity;
 import com.example.NewsFeed.repository.NewRepository;
@@ -17,8 +21,10 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 public class CustomParserImpl implements CustomParser {
@@ -29,44 +35,68 @@ public class CustomParserImpl implements CustomParser {
     private ModelMapper modelMapper = new ModelMapper();
 
     @Override
-    public List<NewEntity> parse(String feedUrl) throws ParserConfigurationException, SAXException, IOException {
+    public List<NewDto> parse(String feedUrl) throws XMLReaderException, InputSourceException, CustomParsingException {
 
         CustomFeedHandler customFeedHandler = new CustomFeedHandler();
-        XMLReader reader = getXmlReader();
-        InputSource inputSource = getInputSource(feedUrl);
+
+        InputSource inputSource = setInputSource(feedUrl);
+        XMLReader reader = setXmlReader();
 
         reader.setContentHandler(customFeedHandler);
-        reader.parse(inputSource);
 
-        return customFeedHandler.getRssFeedEntity().getFeed();
+        try {
+            reader.parse(inputSource);
+        } catch(SAXException | IOException ex){
+            throw new CustomParsingException("Something went wrong while parsing the XML data: " + ex);
+
+        }
+        return customFeedHandler.getRssFeedEntity();
     }
 
-    private XMLReader getXmlReader() throws ParserConfigurationException, SAXException {
-        SAXParserFactory parserFactory = SAXParserFactory.newInstance();
-        SAXParser parser = parserFactory.newSAXParser();
-        XMLReader reader = parser.getXMLReader();
-        return reader;
+
+
+    private XMLReader setXmlReader() throws XMLReaderException {
+        try {
+            SAXParserFactory parserFactory = SAXParserFactory.newInstance();
+            SAXParser parser = parserFactory.newSAXParser();
+            XMLReader reader = parser.getXMLReader();
+            return reader;
+        }catch(SAXException | ParserConfigurationException ex){
+            throw new XMLReaderException("Something went wrong setting up the XML Reader: " + ex);
+        }
     }
 
 
-    private InputSource getInputSource(String feedUrl) throws IOException {
-        URL url = new URL(feedUrl);
-        InputSource inputSource = new InputSource(url.openStream());
-        return inputSource;
+    private InputSource setInputSource(String feedUrl) throws InputSourceException {
+        try {
+            URL url = new URL(feedUrl);
+            InputSource inputSource = new InputSource(url.openStream());
+            return inputSource;
+        } catch(IOException ex) {
+            throw new InputSourceException("Something went wrong setting up the Input Source, please check that the URL is well formed: " + ex);
+        }
     }
 
     @Override
     @Transactional
-    public Integer storeInDb(List<NewEntity> newList) {
-        List<NewEntity> validatedList = checkDuplicatesInList(newList);
+    public Integer storeInDb(List<NewDto> newList) {
+        List<NewEntity> newEntityList = parseListToEntity(newList);
+        List<NewEntity> validatedList = validateList(newEntityList);
         return newRepository.saveAll(validatedList).size();
     }
 
-    private List<NewEntity> checkDuplicatesInList(List<NewEntity> newList) {
+    private List<NewEntity> validateList(List<NewEntity> newList) {
+        List<NewEntity> validatedList = new ArrayList<>();
         newList.forEach(newEntity -> {
             Optional<NewEntity> existingNew = newRepository.findById(newEntity.getId());
-            if(existingNew.isPresent() && existingNew.get().equals(newEntity)) newList.remove(newEntity);
+            if(!existingNew.isPresent() || (existingNew.isPresent() && !existingNew.get().equals(newEntity))) validatedList.add(newEntity);
         });
-        return newList;
+        return validatedList;
+    }
+
+    private List<NewEntity> parseListToEntity(List<NewDto> newDtoList){
+        return newDtoList.stream()
+                .map(source -> modelMapper.map(source, NewEntity.class))
+                .collect(Collectors.toList());
     }
 }

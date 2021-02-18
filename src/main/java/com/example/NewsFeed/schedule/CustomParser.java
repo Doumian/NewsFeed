@@ -1,6 +1,9 @@
 package com.example.NewsFeed.schedule;
 
-import com.example.NewsFeed.model.NewEntity;
+import com.example.NewsFeed.dto.NewDto;
+import com.example.NewsFeed.exception.InputSourceException;
+import com.example.NewsFeed.exception.CustomParsingException;
+import com.example.NewsFeed.exception.XMLReaderException;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -9,8 +12,8 @@ import java.util.List;
 
 public interface CustomParser {
 
-    List<NewEntity> parse(String url) throws ParserConfigurationException, SAXException, IOException;
+    List<NewDto> parse(String url) throws ParserConfigurationException, SAXException, IOException, XMLReaderException, InputSourceException, CustomParsingException;
 
-    Integer storeInDb(List<NewEntity> feedItemEntities);
+    Integer storeInDb(List<NewDto> newDtos);
 
 }

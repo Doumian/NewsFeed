@@ -1,7 +1,10 @@
 package com.example.NewsFeed.schedule;
 
-import com.example.NewsFeed.model.NewEntity;
-import com.example.NewsFeed.schedule.impl.CustomParserImpl;
+import com.example.NewsFeed.dto.NewDto;
+import com.example.NewsFeed.exception.InputSourceException;
+import com.example.NewsFeed.exception.CustomParsingException;
+import com.example.NewsFeed.exception.XMLReaderException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.xml.sax.SAXException;
@@ -18,6 +21,9 @@ import java.util.List;
 @Component
 public class ScheduledFeedCall{
 
+	@Autowired
+	CustomParser customParser;
+
 	private static final String RSS_FEED_URL = "http://feeds.nos.nl/nosjournaal?format=xml.";
 	private static final String CRON = "*/5 * * * * *";
 
@@ -29,10 +35,9 @@ public class ScheduledFeedCall{
 	 * @throws IOException                  the io exception
 	 */
 	@Scheduled(cron=CRON)
-	public void retrieveNewsFeed() throws IOException, SAXException, ParserConfigurationException {
+	public void retrieveNewsFeed() throws IOException, SAXException, ParserConfigurationException, InputSourceException, XMLReaderException, CustomParsingException {
 
-		CustomParser customParser = new CustomParserImpl();
-		List<NewEntity> parse = customParser.parse(RSS_FEED_URL);
+		List<NewDto> parse = customParser.parse(RSS_FEED_URL);
 		customParser.storeInDb(parse);
 
 	}
