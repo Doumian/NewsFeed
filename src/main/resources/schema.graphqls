@@ -1,0 +1,12 @@
+type New {
+    id: ID!
+    guid: Int
+    title: String
+    description: String
+    publicationDate: String
+    image: String
+}
+
+type Query {
+    selectNew(id: ID): New
+}

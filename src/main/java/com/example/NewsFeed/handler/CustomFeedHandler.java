@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
 
 /**
@@ -40,8 +39,11 @@ public class CustomFeedHandler extends DefaultHandler {
     private static final String URL = "url";
 
     private static final String DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ssZ";
-
     private static final String PATTERN = "\\d+(?!.*\\d)";
+
+    private static final String DATE_PARSING_ERROR = "Something went wrong while parsing the Publication Date, it may be malformed or non parseable: ";
+    private static final String IMAGE_PARSING_ERROR = "Something went wrong while parsing the Image URL, it may be malformed or non parseable: ";
+    private static final String GUID_PARSING_ERROR = "Something went wrong while extracting the GUID, non matching results: ";
 
     private List<NewDto> feed;
     private String imageUrl;
@@ -84,7 +86,6 @@ public class CustomFeedHandler extends DefaultHandler {
             chars.setLength(0);
             if(qName.equals(ITEM)){
                 if(Boolean.FALSE.equals(limitReached)) {
-                    //if (feed == null) startDocument();
                     feed.add(new NewDto());
                     if (feed.size() == 10) limitReached = true;
                 }
@@ -105,7 +106,7 @@ public class CustomFeedHandler extends DefaultHandler {
     @SneakyThrows
     @Override
     public void endElement(String uri, String localName, String qName) {
-        if(feed.size() > 0) {
+        if(!feed.isEmpty()) {
             switch (qName) {
                 case TITLE:
                     latestArticle().setTitle(chars.toString());
@@ -120,7 +121,7 @@ public class CustomFeedHandler extends DefaultHandler {
                     latestArticle().setImage(urlToByteArray(imageUrl));
                     break;
                 case GUID:
-                    latestArticle().setId(extractIdFromUrl());
+                    latestArticle().setGuid(extractGuidFromUrl());
                     break;
             }
         }
@@ -131,11 +132,10 @@ public class CustomFeedHandler extends DefaultHandler {
         try {
             SimpleDateFormat curFormatter = new SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH);
             Date publicationDate = curFormatter.parse(chars.toString());
-            LocalDateTime ldtPublicationDate = LocalDateTime.ofInstant(publicationDate.toInstant(),
+            return LocalDateTime.ofInstant(publicationDate.toInstant(),
                     ZoneId.systemDefault());
-            return ldtPublicationDate;
         } catch(ParseException ex){
-            throw new CustomParsingException("Something went wrong while parsing the Publication Date, it may be malformed or non parseable: " + ex);
+            throw new CustomParsingException(DATE_PARSING_ERROR + ex);
         }
     }
 
@@ -150,24 +150,27 @@ public class CustomFeedHandler extends DefaultHandler {
     }
 
 
-    private byte[] urlToByteArray(String imageUrl) throws CustomParsingException {
+    private byte[] urlToByteArray(String imageUrl) throws CustomParsingException, IOException {
+        BufferedInputStream bis = null;
         try {
             URL url = new URL(imageUrl);
-            BufferedInputStream bis = new BufferedInputStream(url.openConnection().getInputStream());
+            bis = new BufferedInputStream(url.openConnection().getInputStream());
             return bis.readAllBytes();
         } catch (IOException ex){
-            throw new CustomParsingException("Something went wrong while parsing the Image URL, it may be malformed or non parseable: " + ex);
+            throw new CustomParsingException(IMAGE_PARSING_ERROR + ex);
+        } finally {
+            if(bis != null) bis.close();
         }
     }
 
 
-    private Integer extractIdFromUrl() throws CustomParsingException {
+    private Integer extractGuidFromUrl() throws CustomParsingException {
 
         Pattern pattern = Pattern.compile(PATTERN);
         Matcher matcher = pattern.matcher(chars.toString());
         matcher.find();
         if (NumberUtils.isCreatable(matcher.group(0))) return Integer.valueOf(matcher.group(0));
-        else throw new CustomParsingException("Something went wrong while extracting the ID, non matching results" + matcher.group(0));
+        else throw new CustomParsingException(GUID_PARSING_ERROR + matcher.group(0));
     }
 
 }

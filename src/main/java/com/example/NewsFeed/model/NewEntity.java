@@ -14,7 +14,10 @@ import java.time.LocalDateTime;
 public class NewEntity {
 
     @Id
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Integer guid;
 
     private String title;
     

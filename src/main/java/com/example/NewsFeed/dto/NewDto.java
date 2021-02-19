@@ -12,7 +12,9 @@ import java.time.LocalDateTime;
 @Data
 public class NewDto {
 
-    private Integer id;
+    private Long id;
+
+    private Integer guid;
 
     private String title;
 
