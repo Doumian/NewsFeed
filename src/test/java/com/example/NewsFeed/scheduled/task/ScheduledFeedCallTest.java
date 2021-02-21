@@ -32,7 +32,7 @@ class ScheduledFeedCallTest {
         final Integer result = scheduledFeedCallUnderTest.retrieveNewsFeed();
 
         // Verify the results
-        assertThat(result).isGreaterThan(0);
+        assertThat(result).isPositive();
     }
 
 
@@ -57,7 +57,7 @@ class ScheduledFeedCallTest {
         final Integer result = scheduledFeedCallUnderTest.retrieveNewsFeed();
 
         // Verify the results
-        assertThat(result).isGreaterThan(0);
+        assertThat(result).isPositive();
     }
 
 
@@ -100,7 +100,7 @@ class ScheduledFeedCallTest {
         final Integer result = scheduledFeedCallUnderTest.storeInDb(newList);
 
         // Verify the results
-        assertThat(result).isGreaterThan(0);
+        assertThat(result).isPositive();
     }
 
     @Test
@@ -163,6 +163,6 @@ class ScheduledFeedCallTest {
         final Integer result = scheduledFeedCallUnderTest.storeInDb(newList);
 
         // Verify the results
-        assertThat(result).isEqualTo(0);
+        assertThat(result).isZero();
     }
 }
