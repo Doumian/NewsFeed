@@ -22,6 +22,8 @@ mvn spring-boot:run
 ```
 ## GraphiQL Queries
 
+You can find GraphiQL playground in your own localhost:8080/graphiql
+
 Basic implemented queries:
 
 
