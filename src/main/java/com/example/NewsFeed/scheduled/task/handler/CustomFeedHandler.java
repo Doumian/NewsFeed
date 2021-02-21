@@ -1,9 +1,9 @@
-package com.example.NewsFeed.handler;
+package com.example.NewsFeed.scheduled.task.handler;
 
-import com.example.NewsFeed.dto.NewDto;
 import com.example.NewsFeed.exception.CustomParsingException;
+import com.example.NewsFeed.exception.InputSourceException;
+import com.example.NewsFeed.model.dto.NewDto;
 import lombok.SneakyThrows;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -23,8 +23,7 @@ import java.util.regex.Pattern;
 
 
 /**
- * Custom Handler for parsing the XML data
- * @author dlarena
+ * The type Custom feed handler.
  */
 public class CustomFeedHandler extends DefaultHandler {
 
@@ -42,19 +41,21 @@ public class CustomFeedHandler extends DefaultHandler {
     private static final String PATTERN = "\\d+(?!.*\\d)";
 
     private static final String DATE_PARSING_ERROR = "Something went wrong while parsing the Publication Date, it may be malformed or non parseable: ";
-    private static final String IMAGE_PARSING_ERROR = "Something went wrong while parsing the Image URL, it may be malformed or non parseable: ";
     private static final String GUID_PARSING_ERROR = "Something went wrong while extracting the GUID, non matching results: ";
+    private static final String SET_INPUT_SOURCE_ERROR = "Something went wrong setting up the Input Source: ";
+
 
     private List<NewDto> feed;
     private String imageUrl;
     private Boolean limitReached = false;
 
     /**
-     * Receive notification of character data inside an element.
      *
-     * @param ch - The characters.
-     * @param start - The start position in the character array.
-     * @param length - The number of characters to use from the character array.
+     * Method that chains the data between tags
+     *
+     * @param ch Char to chain
+     * @param start Index start
+     * @param length The length of it
      */
 
     @Override
@@ -63,7 +64,7 @@ public class CustomFeedHandler extends DefaultHandler {
     }
 
     /**
-     * Starts the document, initializing the object RSSFeedEntity
+     * Initialize the feed
      */
 
     @Override
@@ -73,12 +74,12 @@ public class CustomFeedHandler extends DefaultHandler {
 
     /**
      *
-     * Method that checks the starting element, and depending on the opener tag, creates new items in the list or sets the URL of the image
+     * Method that evaluates the starting tags from the XML, and what to do in each case
      *
-     * @param uri - The Namespace URI, or the empty string if the element has no Namespace URI or if Namespace processing is not being performed.
-     * @param lName - The local name (without prefix), or the empty string if Namespace processing is not being performed.
-     * @param qName - The qualified name (with prefix), or the empty string if qualified names are not available.
-     * @param attr - The attributes attached to the element. If there are no attributes, it shall be an empty Attributes object.
+     * @param uri The Namespace URI mapped to the prefix
+     * @param lName The qualified name (with prefix), or the empty string if qualified names are not available
+     * @param qName Tag name
+     * @param attr Posible attributes it may have
      */
 
     @Override
@@ -96,11 +97,12 @@ public class CustomFeedHandler extends DefaultHandler {
     }
 
     /**
-     * Method that checks the closing element, and depending on the closing tag, sets the data of them into the properties of the last article evaluated
      *
-     * @param uri - The Namespace URI, or the empty string if the element has no Namespace URI or if Namespace processing is not being performed.
-     * @param localName - The local name (without prefix), or the empty string if Namespace processing is not being performed.
-     * @param qName - The qualified name (with prefix), or the empty string if qualified names are not available.
+     * Method that evaluates the ending tags from the XML, and what to do in each case
+     *
+     * @param uri The location of the content to be parsed.
+     * @param localName Element in a document has a name as it is defined in the namespace
+     * @param qName Tag name
      */
 
     @SneakyThrows
@@ -127,6 +129,13 @@ public class CustomFeedHandler extends DefaultHandler {
         }
     }
 
+    /**
+     *
+     * Reads and parse from the current date data to a LocalDateTime
+     *
+     * @return The parsed date into LocalDateTime
+     * @throws CustomParsingException If parsing the date fails
+     */
 
     private LocalDateTime getLocalDateTime() throws CustomParsingException {
         try {
@@ -139,38 +148,69 @@ public class CustomFeedHandler extends DefaultHandler {
         }
     }
 
+    /**
+     *
+     * Retrieves the last new item from the feed
+     *
+     * @return the last managed new item
+     */
+
     private NewDto latestArticle() {
         List<NewDto> articleList = feed;
         int latestArticleIndex = articleList.size() - 1;
         return articleList.get(latestArticleIndex);
     }
 
+    /**
+     * Gets rss feed entity.
+     *
+     * @return The list of new Items from the feed
+     */
     public List<NewDto> getRssFeedEntity() {
         return feed;
     }
 
 
-    private byte[] urlToByteArray(String imageUrl) throws CustomParsingException, IOException {
+    /**
+     *
+     * Transform an image from a URL to a byte[] in order to be able to persist it in the db
+     *
+     * @param imageUrl The image origin
+     * @return An image fully transformed to a byte[]
+     * @throws IOException If something goes bad when reading and opening the Inputs
+     * @throws InputSourceException If preparing the input source fails
+     */
+
+    private byte[] urlToByteArray(String imageUrl) throws IOException, InputSourceException {
         BufferedInputStream bis = null;
         try {
             URL url = new URL(imageUrl);
             bis = new BufferedInputStream(url.openConnection().getInputStream());
             return bis.readAllBytes();
         } catch (IOException ex){
-            throw new CustomParsingException(IMAGE_PARSING_ERROR + ex);
+            throw new InputSourceException(SET_INPUT_SOURCE_ERROR + ex);
         } finally {
             if(bis != null) bis.close();
         }
     }
 
+    /**
+     *
+     * Extracts an Integer GUID to from the new URL in order to unique identify them
+     *
+     * @return Integer GUID
+     * @throws CustomParsingException If the extraction fails
+     */
 
     private Integer extractGuidFromUrl() throws CustomParsingException {
-
-        Pattern pattern = Pattern.compile(PATTERN);
-        Matcher matcher = pattern.matcher(chars.toString());
-        matcher.find();
-        if (NumberUtils.isCreatable(matcher.group(0))) return Integer.valueOf(matcher.group(0));
-        else throw new CustomParsingException(GUID_PARSING_ERROR + matcher.group(0));
+        try {
+            Pattern pattern = Pattern.compile(PATTERN);
+            Matcher matcher = pattern.matcher(chars.toString());
+            matcher.find();
+            return Integer.valueOf(matcher.group(0));
+        } catch(IllegalStateException ex){
+            throw new CustomParsingException(GUID_PARSING_ERROR + ex);
+        }
     }
 
 }

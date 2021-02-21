@@ -8,5 +8,7 @@ type New {
 }
 
 type Query {
-    selectNew(id: ID): New
+    selectNewById(id: ID): New
+    selectNewByGuid(guid: Int): New
+    selectAllNews: [New]
 }

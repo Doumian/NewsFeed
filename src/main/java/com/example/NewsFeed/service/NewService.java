@@ -1,6 +1,6 @@
 package com.example.NewsFeed.service;
 
-import com.example.NewsFeed.dto.NewDto;
+import com.example.NewsFeed.model.dto.NewDto;
 import java.util.List;
 
 /**

@@ -1,21 +1,18 @@
-package com.example.NewsFeed.schedule;
+package com.example.NewsFeed.scheduled.task;
 
-import com.example.NewsFeed.dto.NewDto;
 import com.example.NewsFeed.exception.CustomParsingException;
 import com.example.NewsFeed.exception.InputSourceException;
 import com.example.NewsFeed.exception.XmlReaderException;
-import com.example.NewsFeed.model.NewEntity;
+import com.example.NewsFeed.model.dto.NewDto;
+import com.example.NewsFeed.model.entity.NewEntity;
 import com.example.NewsFeed.repository.NewRepository;
-import com.example.NewsFeed.schedule.impl.FeedSaxParserImpl;
+import com.example.NewsFeed.scheduled.task.impl.FeedSaxParserImpl;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.xml.sax.SAXException;
 
 import javax.transaction.Transactional;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -24,11 +21,15 @@ import java.util.stream.Collectors;
 
 /**
  * The Schedule class that runs the Scheduled method to retrieve the RSS Feed every 5 min
+ *
  * @author dlarena
  */
 @Component
 public class ScheduledFeedCall{
 
+	/**
+	 * The New repository.
+	 */
 	@Autowired
 	NewRepository newRepository;
 
@@ -38,28 +39,43 @@ public class ScheduledFeedCall{
 	private static final String CRON = "0 0/5 * * * ?";
 
 	/**
-	 * Method that retrieves the news feed, and reads them using a custom handler
+	 * Scheduled task that executes every 05 min, that retrieves and parse XML data from the RSS Feed Link, and store them into the database.
 	 *
-	 * @throws ParserConfigurationException the parser configuration exception
-	 * @throws SAXException                 the sax exception
-	 * @throws IOException                  the io exception
+	 * @return the amount of items that have been persisted
+	 * @throws XmlReaderException     If reading the XML fails
+	 * @throws InputSourceException   If preparing the input source fails
+	 * @throws CustomParsingException If parsing the XML data fails
 	 */
-
 	@Transactional
 	@Scheduled(cron=CRON)
-	public void retrieveNewsFeed() throws InputSourceException, CustomParsingException, XmlReaderException {
+	public Integer retrieveNewsFeed() throws InputSourceException, CustomParsingException, XmlReaderException {
 
 		FeedParser feedParser = new FeedSaxParserImpl();
 		List<NewDto> newDtoList = feedParser.parse(RSS_FEED_URL);
-		storeInDb(newDtoList);
+		return storeInDb(newDtoList);
 
 	}
 
+
+	/**
+	 * Validates and stores in db the dats
+	 *
+	 * @param newList the new list to persist
+	 * @return the amount of records persisted
+	 */
 	public Integer storeInDb(List<NewDto> newList) {
 		List<NewEntity> newEntityList = parseDtoListToEntityList(newList);
 		List<NewEntity> validatedList = validateList(newEntityList);
-		return newRepository.saveAll(validatedList).size();
+		newRepository.saveAll(validatedList);
+		return validatedList.size();
 	}
+
+	/**
+	 * Validates the List checking if the new item already exists in the db, and if so, if there is anything to update. Non existing items are also inserted.
+	 *
+	 * @param newList the list to validate
+	 * @return the new validated list
+	 */
 
 	private List<NewEntity> validateList(List<NewEntity> newList) {
 		List<NewEntity> validatedList = new ArrayList<>();
@@ -75,6 +91,13 @@ public class ScheduledFeedCall{
 		});
 		return validatedList;
 	}
+
+	/**
+	 * Map an existent DTO list to an Entity one
+	 *
+	 * @param newDtoList List of DTOs
+	 * @return DTO list mapped to Entity List
+	 */
 
 	private List<NewEntity> parseDtoListToEntityList(List<NewDto> newDtoList){
 		return newDtoList.stream()

@@ -1,4 +1,4 @@
-package com.example.NewsFeed.dto;
+package com.example.NewsFeed.model.dto;
 
 import lombok.Data;
 
@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 
 /**
  * The type Feed item dto.
+ *
  * @author dlarena
  */
 @Data

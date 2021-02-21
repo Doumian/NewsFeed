@@ -1,7 +1,7 @@
 package com.example.NewsFeed.service.impl;
 
 
-import com.example.NewsFeed.dto.NewDto;
+import com.example.NewsFeed.model.dto.NewDto;
 import com.example.NewsFeed.repository.NewRepository;
 import com.example.NewsFeed.service.NewService;
 import org.modelmapper.ModelMapper;

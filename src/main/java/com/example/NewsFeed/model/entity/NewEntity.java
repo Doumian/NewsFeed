@@ -1,4 +1,4 @@
-package com.example.NewsFeed.model;
+package com.example.NewsFeed.model.entity;
 
 import lombok.Data;
 
