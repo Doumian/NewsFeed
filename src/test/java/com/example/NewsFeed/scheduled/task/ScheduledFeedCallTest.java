@@ -1,8 +1,5 @@
 package com.example.NewsFeed.scheduled.task;
 
-import com.example.NewsFeed.exception.CustomParsingException;
-import com.example.NewsFeed.exception.InputSourceException;
-import com.example.NewsFeed.exception.XmlReaderException;
 import com.example.NewsFeed.model.dto.NewDto;
 import com.example.NewsFeed.model.entity.NewEntity;
 import com.example.NewsFeed.repository.NewRepository;
@@ -15,7 +12,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -39,95 +35,7 @@ class ScheduledFeedCallTest {
         assertThat(result).isGreaterThan(0);
     }
 
-    @Test
-    void testRetrieveNewsFeed_ThrowsInputSourceException() {
-        // Setup
 
-        // Configure NewRepository.findByGuid(...).
-        final NewEntity newEntity1 = new NewEntity();
-        newEntity1.setId(0L);
-        newEntity1.setGuid(0);
-        newEntity1.setTitle("title");
-        newEntity1.setDescription("description");
-        newEntity1.setPublicationDate(LocalDateTime.of(2020, 1, 1, 0, 0, 0));
-        newEntity1.setImage("content".getBytes());
-        final Optional<NewEntity> newEntity = Optional.of(newEntity1);
-        when(scheduledFeedCallUnderTest.newRepository.findByGuid(0)).thenReturn(newEntity);
-
-        // Configure NewRepository.saveAll(...).
-        final NewEntity newEntity2 = new NewEntity();
-        newEntity2.setId(0L);
-        newEntity2.setGuid(0);
-        newEntity2.setTitle("title");
-        newEntity2.setDescription("description");
-        newEntity2.setPublicationDate(LocalDateTime.of(2020, 1, 1, 0, 0, 0));
-        newEntity2.setImage("content".getBytes());
-        final List<NewEntity> newEntities = List.of(newEntity2);
-        when(scheduledFeedCallUnderTest.newRepository.saveAll(List.of(new NewEntity()))).thenReturn(newEntities);
-
-        // Run the test
-        assertThatThrownBy(() -> scheduledFeedCallUnderTest.retrieveNewsFeed()).isInstanceOf(InputSourceException.class);
-    }
-
-    @Test
-    void testRetrieveNewsFeed_ThrowsCustomParsingException() {
-        // Setup
-
-        // Configure NewRepository.findByGuid(...).
-        final NewEntity newEntity1 = new NewEntity();
-        newEntity1.setId(0L);
-        newEntity1.setGuid(0);
-        newEntity1.setTitle("title");
-        newEntity1.setDescription("description");
-        newEntity1.setPublicationDate(LocalDateTime.of(2020, 1, 1, 0, 0, 0));
-        newEntity1.setImage("content".getBytes());
-        final Optional<NewEntity> newEntity = Optional.of(newEntity1);
-        when(scheduledFeedCallUnderTest.newRepository.findByGuid(0)).thenReturn(newEntity);
-
-        // Configure NewRepository.saveAll(...).
-        final NewEntity newEntity2 = new NewEntity();
-        newEntity2.setId(0L);
-        newEntity2.setGuid(0);
-        newEntity2.setTitle("title");
-        newEntity2.setDescription("description");
-        newEntity2.setPublicationDate(LocalDateTime.of(2020, 1, 1, 0, 0, 0));
-        newEntity2.setImage("content".getBytes());
-        final List<NewEntity> newEntities = List.of(newEntity2);
-        when(scheduledFeedCallUnderTest.newRepository.saveAll(List.of(new NewEntity()))).thenReturn(newEntities);
-
-        // Run the test
-        assertThatThrownBy(() -> scheduledFeedCallUnderTest.retrieveNewsFeed()).isInstanceOf(CustomParsingException.class);
-    }
-
-    @Test
-    void testRetrieveNewsFeed_ThrowsXmlReaderException() {
-        // Setup
-
-        // Configure NewRepository.findByGuid(...).
-        final NewEntity newEntity1 = new NewEntity();
-        newEntity1.setId(0L);
-        newEntity1.setGuid(0);
-        newEntity1.setTitle("title");
-        newEntity1.setDescription("description");
-        newEntity1.setPublicationDate(LocalDateTime.of(2020, 1, 1, 0, 0, 0));
-        newEntity1.setImage("content".getBytes());
-        final Optional<NewEntity> newEntity = Optional.of(newEntity1);
-        when(scheduledFeedCallUnderTest.newRepository.findByGuid(0)).thenReturn(newEntity);
-
-        // Configure NewRepository.saveAll(...).
-        final NewEntity newEntity2 = new NewEntity();
-        newEntity2.setId(0L);
-        newEntity2.setGuid(0);
-        newEntity2.setTitle("title");
-        newEntity2.setDescription("description");
-        newEntity2.setPublicationDate(LocalDateTime.of(2020, 1, 1, 0, 0, 0));
-        newEntity2.setImage("content".getBytes());
-        final List<NewEntity> newEntities = List.of(newEntity2);
-        when(scheduledFeedCallUnderTest.newRepository.saveAll(List.of(new NewEntity()))).thenReturn(newEntities);
-
-        // Run the test
-        assertThatThrownBy(() -> scheduledFeedCallUnderTest.retrieveNewsFeed()).isInstanceOf(XmlReaderException.class);
-    }
 
     @Test
     void testRetrieveNewsFeed_NewRepositoryFindByGuidReturnsAbsent() throws Exception {
@@ -152,29 +60,7 @@ class ScheduledFeedCallTest {
         assertThat(result).isGreaterThan(0);
     }
 
-    @Test
-    void testRetrieveNewsFeed_NewRepositorySaveAllReturnsNoItems() throws Exception {
-        // Setup
 
-        // Configure NewRepository.findByGuid(...).
-        final NewEntity newEntity1 = new NewEntity();
-        newEntity1.setId(0L);
-        newEntity1.setGuid(0);
-        newEntity1.setTitle("title");
-        newEntity1.setDescription("description");
-        newEntity1.setPublicationDate(LocalDateTime.of(2020, 1, 1, 0, 0, 0));
-        newEntity1.setImage("content".getBytes());
-        final Optional<NewEntity> newEntity = Optional.of(newEntity1);
-        when(scheduledFeedCallUnderTest.newRepository.findByGuid(0)).thenReturn(newEntity);
-
-        when(scheduledFeedCallUnderTest.newRepository.saveAll(List.of(new NewEntity()))).thenReturn(Collections.emptyList());
-
-        // Run the test
-        final Integer result = scheduledFeedCallUnderTest.retrieveNewsFeed();
-
-        // Verify the results
-        assertThat(result).isEqualTo(0);
-    }
 
     @Test
     void testStoreInDb() {

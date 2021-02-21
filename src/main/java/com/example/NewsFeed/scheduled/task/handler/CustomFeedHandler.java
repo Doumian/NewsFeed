@@ -141,8 +141,9 @@ public class CustomFeedHandler extends DefaultHandler {
         try {
             SimpleDateFormat curFormatter = new SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH);
             Date publicationDate = curFormatter.parse(chars.toString());
-            return LocalDateTime.ofInstant(publicationDate.toInstant(),
+            LocalDateTime date = LocalDateTime.ofInstant(publicationDate.toInstant(),
                     ZoneId.systemDefault());
+            return date;
         } catch(ParseException ex){
             throw new CustomParsingException(DATE_PARSING_ERROR + ex);
         }
